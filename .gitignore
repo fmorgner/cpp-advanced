@@ -1,1 +1,4 @@
 build
+doc
+
+.ycm_extra_conf.pyc

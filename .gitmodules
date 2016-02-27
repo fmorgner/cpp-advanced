@@ -1,0 +1,3 @@
+[submodule "cpa"]
+	path = third_party/cpa
+	url = https://gthub.com/fmorgner/cpa.git

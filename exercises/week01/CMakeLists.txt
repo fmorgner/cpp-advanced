@@ -1,3 +1,7 @@
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/week01")
 
-add_executable(dim src/dim.cpp)
+include_directories(include)
+
+add_executable(distance_in_meters src/dim.cpp)
+add_executable(speed src/spd.cpp)
+

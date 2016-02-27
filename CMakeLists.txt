@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.0)
 project(CplA CXX)
 
+enable_testing()
+
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Debug CACHE STRING "The build type" FORCE)
 endif()
@@ -11,9 +13,11 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${OUTPUT_PREFIX}/lib")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${OUTPUT_PREFIX}/lib")
 
 set(CMAKE_CXX_FLAGS "-std=c++14 -pedantic -Wall -Wextra -Werror")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -O0 -g3 -fno-omit-frame-pointer -fsanitize=address")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -O0 -g3 -fno-omit-frame-pointer -fsanitize=address,undefined")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O3")
 
 include_directories(SYSTEM third_party/cute)
+include_directories(SYSTEM third_party/cpa/include)
 
+add_subdirectory(third_party/cpa)
 add_subdirectory(exercises)
