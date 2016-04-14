@@ -1,5 +1,5 @@
 #include "bounded_buffer_semantic_suite.h"
-#include "cute.h"
+#include <cute/cute.h>
 #include "BoundedBuffer.h"
 #include "MemoryOperationCounter.h"
 

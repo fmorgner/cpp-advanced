@@ -38,7 +38,7 @@ BoundedBuffer<int> createBufferWithFiveConsecutiveInts(int startValue) {
 }
 
 void test_two_begins_of_same_buffer_are_equal() {
-	BoundedBuffer<int> buffer{createBufferWithFiveConsecutiveInts(0)};
+  BoundedBuffer<int> buffer{createBufferWithFiveConsecutiveInts(0)};
 
 	ASSERT_EQUAL(buffer.begin(), buffer.begin());
 }
@@ -367,7 +367,7 @@ void test_arbitrary_iterators_compare_greater_than_for_non_empty_buffers() {
 void test_relative_comparison_of_iterators_to_different_buffers_throws() {
 	BoundedBuffer<int> buffer{5}, buffer2{5};
 
-	ASSERT_THROWS(buffer.begin() < buffer2.begin(), std::logic_error);
+	ASSERT_THROWS((void)(buffer.begin() < buffer2.begin()), std::logic_error);
 }
 
 cute::suite make_suite_bounded_buffer_iterator_suite(){

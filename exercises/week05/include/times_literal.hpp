@@ -1,33 +1,20 @@
-#ifndef __TL
-#define __TL
+#ifndef TIMES_LITERAL_HPP_
+#define TIMES_LITERAL_HPP_
 
-#include <functional>
+namespace times {
+namespace literal {
 
-namespace times
-  {
+inline auto operator"" _times(unsigned long long n) {
+	return [n](auto f){
+		for (auto i = 0u; i < n; i++) {
+			f();
+		}
+	};
+}
 
-  namespace literal
-    {
-
-    struct invoker {
-      constexpr invoker(unsigned long long n) :
-        n { n } {
-        }
-      void operator()(std::function<void()> f) {
-        for (auto i = 0u; i < n; i++) {
-          f();
-        }
-      }
-      private:
-      unsigned long long const n;
-    };
-
-    constexpr invoker operator"" _times(unsigned long long n) {
-      return invoker { n };
-    }
-
-    }
-  }
+}
+}
 
 
-#endif
+
+#endif /* TIMES_LITERAL_HPP_ */

@@ -1,5 +1,5 @@
 #include "bounded_buffer_signatures_suite.h"
-#include "cute.h"
+#include <cute/cute.h>
 #include "BoundedBuffer.h"
 #include <boost/type_index.hpp>
 

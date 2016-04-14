@@ -1,5 +1,5 @@
 #include "bounded_buffer_content_suite.h"
-#include "cute.h"
+#include <cute/cute.h>
 #include "BoundedBuffer.h"
 #include "times_literal.hpp"
 #include <stdexcept>

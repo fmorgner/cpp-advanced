@@ -1,5 +1,5 @@
 #include "bounded_buffer_student_suite.h"
-#include "cute.h"
+#include <cute/cute.h>
 
 //TODO: Add your own tests here
 
