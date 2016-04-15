@@ -1,8 +1,7 @@
 #include "bounded_buffer_iterator_suite.h"
 #include "BoundedBuffer.h"
-#include "times_literal.hpp"
-
 #include <cute/cute.h>
+#include "times_literal.hpp"
 
 
 using namespace times::literal;
@@ -38,7 +37,7 @@ BoundedBuffer<int> createBufferWithFiveConsecutiveInts(int startValue) {
 }
 
 void test_two_begins_of_same_buffer_are_equal() {
-  BoundedBuffer<int> buffer{createBufferWithFiveConsecutiveInts(0)};
+	BoundedBuffer<int> buffer{createBufferWithFiveConsecutiveInts(0)};
 
 	ASSERT_EQUAL(buffer.begin(), buffer.begin());
 }
@@ -81,7 +80,7 @@ void test_begin_points_to_the_correct_element() {
 
 void test_prefix_incremented_begin_points_to_the_correct_element() {
 	BoundedBuffer<int> const buffer{createBufferWithFiveConsecutiveInts(15)};
-	auto iterator = buffer.begin();
+	BoundedBuffer<int>::const_iterator iterator = buffer.begin();
 
 	++iterator;
 
@@ -370,6 +369,41 @@ void test_relative_comparison_of_iterators_to_different_buffers_throws() {
 	ASSERT_THROWS((void)(buffer.begin() < buffer2.begin()), std::logic_error);
 }
 
+void test_non_const_begin_iterator_overwrites_element() {
+	BoundedBuffer<int> buffer{createBufferWithFiveConsecutiveInts(0)};
+	*buffer.begin() = 23;
+	ASSERT_EQUAL(23, buffer.front());
+}
+
+void test_non_const_end_iterator_overwrites_element() {
+	BoundedBuffer<int> buffer{createBufferWithFiveConsecutiveInts(0)};
+	BoundedBuffer<int>::iterator iterator = buffer.end();
+	*(--iterator) = 23;
+	ASSERT_EQUAL(23, buffer.back());
+}
+
+void test_index_operator() {
+	BoundedBuffer<int> buffer{createBufferWithFiveConsecutiveInts(0)};
+	ASSERT_EQUAL(2, buffer.begin()[2]);
+}
+
+void test_index_end_minus_one_operator() {
+	BoundedBuffer<int> buffer{createBufferWithFiveConsecutiveInts(0)};
+	ASSERT_EQUAL(buffer.back(), buffer.end()[-1]);
+}
+
+struct TypeWithMember {
+	int value;
+};
+
+void test_arrow_operator() {
+	BoundedBuffer<TypeWithMember> buffer{5};
+
+	buffer.push(TypeWithMember{23});
+
+	ASSERT_EQUAL(23, buffer.begin()->value);
+}
+
 cute::suite make_suite_bounded_buffer_iterator_suite(){
 	cute::suite s;
 	s.push_back(CUTE(test_begin_and_end_of_empty_buffer_are_equal));
@@ -420,6 +454,11 @@ cute::suite make_suite_bounded_buffer_iterator_suite(){
 	s.push_back(CUTE(test_arbitrary_iterators_compare_less_than_for_non_empty_buffers));
 	s.push_back(CUTE(test_arbitrary_iterators_compare_greater_than_for_non_empty_buffers));
 	s.push_back(CUTE(test_relative_comparison_of_iterators_to_different_buffers_throws));
+	s.push_back(CUTE(test_non_const_begin_iterator_overwrites_element));
+	s.push_back(CUTE(test_non_const_end_iterator_overwrites_element));
+	s.push_back(CUTE(test_index_operator));
+	s.push_back(CUTE(test_index_end_minus_one_operator));
+	s.push_back(CUTE(test_arrow_operator));
 	return s;
 }
 

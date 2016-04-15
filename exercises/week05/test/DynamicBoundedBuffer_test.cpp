@@ -5,6 +5,7 @@
 //@CMAKE_CUTE_DEPENDENCY=exercises/week05/src/bounded_buffer_signatures_suite.cpp
 //@CMAKE_CUTE_DEPENDENCY=exercises/week05/src/bounded_buffer_student_suite.cpp
 //@CMAKE_CUTE_DEPENDENCY=exercises/week05/src/bounded_buffer_iterator_suite.cpp
+//@CMAKE_CUTE_DEPENDENCY=exercises/week05/src/bounded_buffer_non_default_constructible_element_type_suite.cpp
 
 #include "bounded_buffer_signatures_suite.h"
 #include "bounded_buffer_default_behavior_suite.h"

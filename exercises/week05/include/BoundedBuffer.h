@@ -24,8 +24,8 @@ struct BoundedBuffer
     using typename __base::iterator_category;
     using typename __base::difference_type;
 
-    buffer_iterator(BufferType * const associated, typename BufferType::size_type const index)
-      : m_buffer{associated ? associated : throw std::invalid_argument{"Cannot create iterator from nullptr"}},
+    buffer_iterator(BufferType & buffer, typename BufferType::size_type const index)
+      : m_buffer{buffer},
         m_index{index}
       {
 
@@ -33,12 +33,14 @@ struct BoundedBuffer
 
     bool operator==(buffer_iterator const & other) const
       {
-      return (m_buffer == other.m_buffer) && (m_index == other.m_index);
+      throw_on_different_buffer(other);
+      return (m_index == other.m_index);
       }
 
     bool operator<(buffer_iterator const & other) const
       {
-      return (m_buffer == other.m_buffer) && (m_index < other.m_index);
+      throw_on_different_buffer(other);
+      return (m_index < other.m_index);
       }
 
     buffer_iterator & operator++()
@@ -61,7 +63,6 @@ struct BoundedBuffer
       {
       throw_on_overflow(offset);
       m_index += offset;
-
       return *this;
       }
 
@@ -69,32 +70,28 @@ struct BoundedBuffer
       {
       throw_on_underrun(offset);
       m_index -= offset;
-
       return *this;
       }
 
     difference_type operator-(buffer_iterator const & other) const
       {
       throw_on_different_buffer(other);
-      throw_on_underrun(other.m_index - m_index);
-
       return m_index > other.m_index ? m_index - other.m_index : other.m_index - m_index;
       }
 
-    auto operator*() const
+    std::conditional_t<std::is_const<BufferType>::value, typename BufferType::const_reference, reference> operator*() const
       {
       throw_on_invalid_position();
-
-      return (*m_buffer)[m_index];
+      return m_buffer[m_index];
       }
 
     private:
-      BufferType * m_buffer;
+      BufferType & m_buffer;
       std::size_t m_index;
 
       void throw_on_underrun(typename BufferType::size_type const offset = 1) const
         {
-        if(m_index - offset <= 0)
+        if(m_index == 0 || offset > m_index)
           {
           throw std::logic_error{"Iterator out of range - underrun"};
           }
@@ -102,7 +99,7 @@ struct BoundedBuffer
 
       void throw_on_overflow(typename BufferType::size_type const offset = 1) const
         {
-        if(m_index + offset >= m_buffer->size())
+        if(m_index + offset > m_buffer.size())
           {
           throw std::logic_error{"Iterator out of range - overflow"};
           }
@@ -110,7 +107,7 @@ struct BoundedBuffer
 
       void throw_on_invalid_position() const
         {
-        if(m_index >= m_buffer->size() || m_index < 0)
+        if(m_index >= m_buffer.size())
           {
           throw std::logic_error{"Invalid iterator access - out of bounds"};
           }
@@ -118,29 +115,13 @@ struct BoundedBuffer
 
       void throw_on_different_buffer(buffer_iterator const & other) const
         {
-        if(m_buffer != other.m_buffer)
+        if(&m_buffer != &other.m_buffer)
           {
           throw std::logic_error{"Iterators in binary expression are created from different buffers!"};
           }
         }
 
     };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   using value_type      = ValueType;
   using reference       = ValueType &;
@@ -272,22 +253,22 @@ struct BoundedBuffer
 
   iterator begin()
     {
-    return iterator{this, 0};
+    return iterator{*this, 0};
     }
 
   iterator end()
     {
-    return iterator{this, m_size};
+    return iterator{*this, m_size};
     }
 
   const_iterator begin() const
     {
-    return const_iterator{this, 0};
+    return const_iterator{*this, 0};
     }
 
   const_iterator end() const
     {
-    return const_iterator{this, m_size};
+    return const_iterator{*this, m_size};
     }
 
   const_iterator cbegin() const
