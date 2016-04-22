@@ -37,7 +37,7 @@ struct BoundedBuffer
 
       }
 
-    decltype(auto) operator=(buffer_iterator<std::remove_const_t<BufferType>> const & other)
+    decltype(auto) operator=(buffer_iterator const & other)
       {
       throw_on_different_buffer(other);
 
