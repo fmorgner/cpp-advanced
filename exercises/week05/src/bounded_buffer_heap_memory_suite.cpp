@@ -11,6 +11,12 @@ struct AllocationTracker {
     return ptr;
   }
 
+  static void* operator new(std::size_t sz, void * plc) {
+    AllocationTracker * ptr = static_cast<AllocationTracker*>(::operator new(sz, plc));
+    allocatedSingleObjects.push_back(ptr);
+    return ptr;
+  }
+
   static void* operator new[](std::size_t sz) {
     AllocationTracker * ptr = static_cast<AllocationTracker*>(::operator new[](sz));
     allocatedArrays.push_back(ptr);

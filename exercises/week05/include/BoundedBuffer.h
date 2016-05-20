@@ -23,32 +23,23 @@ struct BoundedBuffer
     using typename __base::iterator_category;
     using typename __base::difference_type;
 
-    buffer_iterator(BufferType & buffer, typename BufferType::size_type const index)
-      : m_buffer{buffer},
+    buffer_iterator(BufferType & buffer, typename BufferType::size_type const index) noexcept
+      : m_buffer{&buffer},
         m_index{index}
       {
 
       }
 
-    buffer_iterator(buffer_iterator<std::remove_const_t<BufferType>> const & other)
+    buffer_iterator(buffer_iterator<std::remove_const_t<BufferType>> const & other) noexcept
       : m_buffer{other.m_buffer},
         m_index{other.m_index}
       {
 
       }
 
-    decltype(auto) operator=(buffer_iterator const & other)
+    auto operator==(buffer_iterator const & other) const noexcept
       {
-      throw_on_different_buffer(other);
-
-      m_index = other.m_index;
-      }
-
-    auto operator==(buffer_iterator const & other) const
-      {
-      throw_on_different_buffer(other);
-
-      return m_index == other.m_index;
+      return m_buffer == other.m_buffer && m_index == other.m_index;
       }
 
     auto operator<(buffer_iterator const & other) const
@@ -59,7 +50,7 @@ struct BoundedBuffer
 
     decltype(auto) operator++()
       {
-      throw_on_overflow();
+      throw_on_out_of_range(1);
       ++m_index;
 
       return *this;
@@ -67,7 +58,7 @@ struct BoundedBuffer
 
     decltype(auto) operator--()
       {
-      throw_on_underrun();
+      throw_on_out_of_range(-1);
       --m_index;
 
       return *this;
@@ -75,7 +66,7 @@ struct BoundedBuffer
 
     decltype(auto) operator+=(difference_type const offset)
       {
-      throw_on_overflow(offset);
+      throw_on_out_of_range(offset);
       m_index += offset;
 
       return *this;
@@ -83,49 +74,40 @@ struct BoundedBuffer
 
     decltype(auto) operator-=(difference_type const offset)
       {
-      throw_on_underrun(offset);
-      m_index -= offset;
-
-      return *this;
+      return (*this) += -offset;
       }
 
     decltype(auto) operator-(buffer_iterator const & other) const
       {
       throw_on_different_buffer(other);
 
-      return m_index > other.m_index ? m_index - other.m_index : other.m_index - m_index;
+      return difference_type(m_index) - difference_type(other.m_index);
       }
 
     decltype(auto) operator*() const
       {
       throw_on_invalid_position();
 
-      return m_buffer.get(m_buffer.to_buffer_index(m_index));
+      return m_buffer->get(m_buffer->to_buffer_index(m_index));
       }
 
     private:
-      BufferType & m_buffer;
-      std::size_t m_index;
+      BufferType * m_buffer{};
+      std::size_t m_index{};
 
-      auto throw_on_underrun(typename BufferType::size_type const offset = 1) const
+      auto throw_on_out_of_range(difference_type const offset) const
         {
-        if(m_index == 0 || offset > m_index)
-          {
-          throw std::out_of_range{"Iterator out of range - underrun"};
-          }
-        }
+        auto newIndex = difference_type(m_index) + offset;
 
-      auto throw_on_overflow(typename BufferType::size_type const offset = 1) const
-        {
-        if(m_index + offset > m_buffer.size())
+        if(newIndex < 0 || newIndex > difference_type(m_buffer->size()))
           {
-          throw std::out_of_range{"Iterator out of range - overflow"};
+          throw std::out_of_range{"Iterator out of range"};
           }
         }
 
       auto throw_on_invalid_position() const
         {
-        if(m_index >= m_buffer.size())
+        if(m_index >= m_buffer->size())
           {
           throw std::out_of_range{"Invalid iterator access - out of bounds"};
           }
@@ -133,14 +115,13 @@ struct BoundedBuffer
 
       auto throw_on_different_buffer(buffer_iterator const & other) const
         {
-        if(&m_buffer != &other.m_buffer)
+        if(m_buffer != other.m_buffer)
           {
           throw std::logic_error{"Iterators in binary expression are created from different buffers!"};
           }
         }
 
       friend struct buffer_iterator<BufferType const>;
-
     };
 
   using value_type      = ValueType;
@@ -165,7 +146,7 @@ struct BoundedBuffer
     copy(other);
     }
 
-  BoundedBuffer(BoundedBuffer && other)
+  BoundedBuffer(BoundedBuffer && other) noexcept
     {
     swap(other);
     }
@@ -226,18 +207,13 @@ struct BoundedBuffer
   auto push(value_type && elem)
     {
     throw_if_full();
-
     ::new (ptr() + push_index()) value_type{std::move(elem)};
     }
 
   auto pop()
     {
     throw_if_empty();
-
-    ptr()[m_first].~value_type();
-
-    m_first = (m_first + 1) % m_maximumSize;
-    --m_size;
+    do_pop();
     }
 
   auto swap(BoundedBuffer & other) noexcept
@@ -250,56 +226,65 @@ struct BoundedBuffer
 
   decltype(auto) operator=(BoundedBuffer const & other)
     {
-    clear();
-
-    if(m_maximumSize != other.m_maximumSize)
+    if(this != &other)
       {
-      delete[](m_data);
-      m_maximumSize = other.m_maximumSize;
-      m_data = new char[m_maximumSize * sizeof(value_type)];
+      auto temporary = BoundedBuffer{other};
+      swap(temporary);
       }
 
-    copy(other);
     return *this;
     }
 
-  decltype(auto) operator=(BoundedBuffer && other)
+  decltype(auto) operator=(BoundedBuffer && other) noexcept(noexcept(swap(other)))
     {
     swap(other);
     return *this;
     }
 
-  auto begin()
+  auto begin() noexcept
     {
     return iterator{*this, 0};
     }
 
-  auto end()
+  auto end() noexcept
     {
     return iterator{*this, m_size};
     }
 
-  auto begin() const
+  auto begin() const noexcept
     {
     return const_iterator{*this, 0};
     }
 
-  auto end() const
+  auto end() const noexcept
     {
     return const_iterator{*this, m_size};
     }
 
-  auto cbegin() const
+  auto cbegin() const noexcept
     {
     return begin();
     }
 
-  auto cend() const
+  auto cend() const noexcept
     {
     return end();
     }
 
   private:
+    auto do_pop() noexcept
+      {
+      ptr()[m_first].~value_type();
+
+      m_first = (m_first + 1) % m_maximumSize;
+      --m_size;
+      }
+
+    auto do_push(value_type const & elem) noexcept(noexcept(new (m_data) value_type{elem}))
+      {
+      new (ptr() + push_index()) value_type{elem};
+      }
+
     auto back_index() const noexcept
       {
       return to_buffer_index(m_size - 1);
@@ -325,39 +310,39 @@ struct BoundedBuffer
       if(full()) throw std::logic_error{"BoundedBuffer is full"};
       }
 
-    auto ptr()
+    auto ptr() noexcept
       {
       return reinterpret_cast<pointer>(m_data);
       }
 
-    auto ptr() const
+    auto ptr() const noexcept
       {
       return reinterpret_cast<const_pointer>(m_data);
       }
 
-    decltype(auto) get(size_type const idx)
+    decltype(auto) get(size_type const idx) noexcept
       {
       return ptr()[idx];
       }
 
-    decltype(auto) get(size_type const idx) const
+    decltype(auto) get(size_type const idx) const noexcept
       {
       return ptr()[idx];
       }
 
-    auto copy(BoundedBuffer const & other)
+    auto copy(BoundedBuffer const & other) noexcept(noexcept(do_push(std::declval<value_type &>())))
       {
       for(auto const & element : other)
         {
-        push(element);
+        do_push(element);
         }
       }
 
-    auto clear()
+    auto clear() noexcept(noexcept(do_pop()))
       {
       for(size_type idx = 0; idx < m_size; ++idx)
         {
-        pop();
+        do_pop();
         }
 
       m_size = 0;
